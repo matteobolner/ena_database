@@ -1,107 +1,76 @@
-from ftplib import FTP
-import pandas as pd
 import os
-from pathlib import Path
-from urllib.parse import urlparse
-import hashlib
+import pandas as pd
+import argparse
+from ena import EnaFtp
 
-#from tqdm import tqdm
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 
 
-class ena_ftp:
-    """
-    Access and download files from ENA FTP
-    """
-    def __init__(self, project, sample, run, urls, md5):
-        self.project = project
-        self.sample = sample
-        self.run = run
-        self.urls = urls.split(";")
-        self.md5 = md5.split(";")
+def main(input_df, output_dir, threads=1, dryrun=False, report_errors=None):
+    '''
+    Read csv containing metadata, split in rows and for each row download reads
+    '''
+    df = pd.read_csv(input_df)
 
-    def setup_ftp(self, root='ftp.sra.ebi.ac.uk', main_dir='vol1/fastq/'):
-        ftp=FTP(root)
-        ftp.login()
-        ftp.cwd(main_dir)
-        return(ftp)
+    rows_list = [df.loc[i] for i in df.index]
 
-    def get_metadata(self):
-        metadata_dict = {'project':self.project,'sample':self.sample,'run':self.run}
-        return(metadata_dict)
+    if threads==1:
+        download_errors_list=[]
+        for row in rows_list:
+            error_list = download_run(row)
+            download_errors_list.append(error_list)
+    else:
+        pool=ThreadPool(threads)
+        download_errors_list = pool.map(download_run, rows_list)
+        pool.close()
+        pool.join()
 
-    def byte_to_gigabyte(self, size):
-        return(size/1E9)
+    if report_errors:
+        download_errors = [j for i in download_errors_list for j in i]
+        with open(args['report_errors'],'w') as f:
+            for i in download_errors:
+                f.write(i)
+                f.write('\n')
+    return()
 
-    def build_folder_structure(self, output_dir):
-        outpath = os.path.join(output_dir, self.project, self.sample)
-        path = Path(outpath).mkdir(parents=True, exist_ok=True)
-        return(outpath)
+def download_run(row):
+    # TODO:ADD to func args -> project, sample, run, urls, md5
+    download_errors = []
+    run_data = EnaFtp(project=row['study_accession'], sample=row['accession'], run=row['run_accession'], urls = row['fastq_ftp'], md5=row['fastq_md5'])
+    filenames = run_data.files_paths().keys()
 
-    def files_paths(self):
-        '''
-        return file path on FTP server
-        '''
-        files_path_dict = {}
-        for url in self.urls:
-            url = urlparse(url)
-            filename = os.path.splitext(url.path)[0]
-            filename = os.path.splitext(filename)[0]
-            filename = os.path.basename(filename)
-            ftp_path = "/".join(url.path.split("/")[3::])
-            files_path_dict[filename]=ftp_path
-        return(files_path_dict)
+    if args.dryrun:
+        print(run_data.run, (str(sum(run_data.files_sizes().values()))+" GB"))
+    else:
+        for file in filenames:
+            downloaded_run = run_data.download_fastq(output_dir=args.output, filename=file)
+            local_md5=run_data.checksum(downloaded_run)
+            remote_md5 = run_data.files_md5()[file]
 
-    def files_sizes(self):
-        '''
-        return file size in GB
-        '''
-        ftp = self.setup_ftp()
-        files = self.files_paths()
-        size_dict = {}
-        for file in files.keys():
-            size_dict[file] = self.byte_to_gigabyte(ftp.size(files[file]))
-        return(size_dict)
-
-    def files_md5(self):
-        '''
-        return file md5
-        '''
-        files = self.files_paths()
-        md5_dict = {}
-        for url, md5 in zip(self.urls, self.md5):
-            url = urlparse(url)
-            filename = os.path.splitext(url.path)[0]
-            filename = os.path.splitext(filename)[0]
-            filename = os.path.basename(filename)
-            md5_dict[filename]=md5
-        return(md5_dict)
-
-    def checksum(self, filename, hash_factory=hashlib.md5(), chunk_num_blocks=128):
-        h = hash_factory
-        with open(filename,'rb') as f:
-            while chunk := f.read(chunk_num_blocks*h.block_size):
-                h.update(chunk)
-        return h.hexdigest()
-
-    def download_fastq(self, output_dir, filename):
-        ftp = self.setup_ftp()
-        ftp_path = self.files_paths()[filename]
-        path = self.build_folder_structure(output_dir)
-        fullpath = os.path.join(path, filename+'.fastq.gz')
-        if os.path.isfile(fullpath):
-            local_md5 = self.checksum(fullpath)
-            remote_md5 = self.files_md5()[filename]
-            if local_md5==remote_md5:
-                print("%s has already been downloaded with no errors" %filename)
-                ftp.quit()
-                return(fullpath)
+            if local_md5 == remote_md5:
+                continue
             else:
-                print("%s is present but with a different md5:" %filename)
-                print("{0} vs {1}".format(local_md5, remote_md5))
-                ftp.quit()
-                return(fullpath)
-        else:
-            with open(fullpath, 'wb') as fp:
-                ftp.retrbinary('RETR %s' %ftp_path, fp.write)
-            ftp.quit()
-            return(fullpath)
+                download_errors.append(file)
+
+    return(download_errors)
+
+
+def configure_args():
+    '''
+    Setup args
+    '''
+    parser = argparse.ArgumentParser(description='Download data from ENA FTP server')
+
+    parser.add_argument('-i','--input', help='File containing sample and reads information', required=True)
+    parser.add_argument('-o','--output', help='Name of the folder in which all data will be saved', required=True)
+    parser.add_argument('-n','--threads', type=int, help='Number of threads to use for parallelization', required=False, default=1)
+    parser.add_argument('-d','--dryrun', help='Dry run, show which runs will be downloaded and their file size', required=False, action='store_true')
+    #parser.add_argument('-p','--progress', help='Show download progress', required=False, action='store_true')
+    parser.add_argument('-r','--report_errors', help='Output file report containing failed downloads', required=False)
+    return(parser)
+
+if __name__ == '__main__':
+    parser = configure_args()
+    args = parser.parse_args()
+    main(input_df=args.input, output_dir=args.output, threads=args.threads, dryrun=args.dryrun, report_errors=args.report_errors)
