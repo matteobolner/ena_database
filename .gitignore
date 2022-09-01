@@ -2,3 +2,4 @@ scripts/download_from_ena.tar.gz
 scripts/download_from_ena/
 __pycache__
 **/__pycache__
+test*

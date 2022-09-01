@@ -74,10 +74,10 @@ class EnaFtp:
             md5_dict[filename]=md5
         return(md5_dict)
 
-    def checksum(self, filename, chunk_num_blocks=128):
+    def checksum(self, filename, chunk_num_blocks=8192):
         h = hashlib.md5()
         with open(filename,'rb') as f:
-            while chunk := f.read(chunk_num_blocks*h.block_size):
+            for chunk in iter(lambda: f.read(chunk_num_blocks*h.block_size), b''):
                 h.update(chunk)
         return(h.hexdigest())
 
