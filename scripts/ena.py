@@ -79,7 +79,7 @@ class EnaFtp:
         with open(filename,'rb') as f:
             while chunk := f.read(chunk_num_blocks*h.block_size):
                 h.update(chunk)
-        return h.hexdigest()
+        return(h.hexdigest())
 
     def download_fastq(self, output_dir, filename):
         ftp = self.setup_ftp()
