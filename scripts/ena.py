@@ -5,7 +5,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 import hashlib
 
-
 class EnaFtp:
     """
     Access and download files from ENA FTP
@@ -30,8 +29,11 @@ class EnaFtp:
     def byte_to_gigabyte(self, size):
         return(size/1E9)
 
-    def build_folder_structure(self, output_dir):
-        outpath = os.path.join(output_dir, self.project, self.sample)
+    def build_folder_structure(self, output_dir, include_project=False):
+        if include_project==True:
+            outpath = os.path.join(output_dir, self.project, self.sample)
+        else:
+            outpath = os.path.join(output_dir, self.sample)
         path = Path(outpath).mkdir(parents=True, exist_ok=True)
         return(outpath)
 
@@ -74,7 +76,7 @@ class EnaFtp:
             md5_dict[filename]=md5
         return(md5_dict)
 
-    def checksum(self, filename, chunk_num_blocks=8192):
+    def checksum(self, filename, chunk_num_blocks=128):
         h = hashlib.md5()
         with open(filename,'rb') as f:
             for chunk in iter(lambda: f.read(chunk_num_blocks*h.block_size), b''):
@@ -84,7 +86,7 @@ class EnaFtp:
     def download_fastq(self, output_dir, filename):
         ftp = self.setup_ftp()
         ftp_path = self.files_paths()[filename]
-        path = self.build_folder_structure(output_dir)
+        path = self.build_folder_structure(output_dir=output_dir, include_project=False)
         fullpath = os.path.join(path, filename+'.fastq.gz')
         if os.path.isfile(fullpath):
             local_md5 = self.checksum(fullpath)
