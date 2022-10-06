@@ -4,13 +4,17 @@ import seaborn as sns
 import numpy as np
 import pycountry_convert as pc
 
+import os
+try:
+    os.chdir("/home/pelmo/work/workspace/ena_database")
+except:
+    pass
 
 def move_column_inplace(df, col, pos):
     col = df.pop(col)
     df.insert(pos, col.name, col)
 
-
-df = pd.read_csv("ena_databases/apis/genomic_data/manually_curated_db.csv")
+df = pd.read_csv("data/apis/manually_curated_db.csv")
 df=df.set_index("Unnamed: 0")
 df.index.name=None
 
@@ -104,38 +108,19 @@ move_column_inplace(df, 'coverage',16)
 
 #df.to_csv("ena_databases/apis/genomic_data/manually_curated_db_fixed.csv")
 
+df['apis_subspecies']=df['apis_subspecies'].fillna('unknown')
 
-mellifera=df[df['apis_species']=='mellifera'].copy()
+df['pmid/doi']=df['pmid/doi'].fillna("unknown")
 
-len(mellifera.groupby('accession'))
+df['geographic_location_manually_curated']=df['geographic_location_manually_curated'].fillna('Unknown')
 
-mellifera['apis_subspecies']=mellifera['apis_subspecies'].fillna('unknown')
-
-len(mellifera[mellifera['apis_subspecies']!='unknown'].groupby('accession'))
-len(mellifera.groupby('accession'))
-
-mellifera['pmid/doi']=mellifera['pmid/doi'].fillna("unknown")
-len(mellifera[mellifera['pmid/doi']=='unknown'].groupby('accession'))
-len(mellifera[mellifera['pmid/doi']!='unknown'].groupby('accession'))
-
-mellifera['geographic_location_manually_curated']=mellifera['geographic_location_manually_curated'].fillna('Unknown')
-
-len(mellifera[mellifera['geographic_location_manually_curated']!='Unknown'].groupby('accession'))
-mellifera[mellifera['geographic_location_manually_curated']!='Unknown']
-mellifera['geographic_location_manually_curated'].unique().tolist()
-len(mellifera.groupby('accession'))
-
-
-mellifera['sex_manually_curated']=mellifera['sex_manually_curated'].fillna("unknown")
-len(mellifera[mellifera['sex_manually_curated']!='unknown'].groupby('accession'))
-mellifera['class_manually_curated']=mellifera['class_manually_curated'].fillna("unknown")
-
+df['sex_manually_curated']=df['sex_manually_curated'].fillna("unknown")
+len(df[df['sex_manually_curated']!='unknown'].groupby('accession'))
+df['class_manually_curated']=df['class_manually_curated'].fillna("unknown")
 
 
 plt.clf()
 sns.set_theme()
-sns.countplot()
-
 sns.set(rc={'figure.figsize':(15,10)})
 
 
@@ -153,6 +138,8 @@ for name,group in df.groupby(by='accession'):
     samplesdf.loc[name]=templist
 
 samplesdf_mellifera = samplesdf[samplesdf['species']=='mellifera'].copy()
+samplesdf_non_mellifera = samplesdf[samplesdf['species']!='mellifera'].copy()
+
 
 plt.clf()
 ax = sns.countplot(x='species', data=samplesdf)
@@ -160,7 +147,7 @@ for item in ax.get_xticklabels():
     item.set_rotation(90)
 ax.set_xlabel("Apis species")
 ax.bar_label(ax.containers[0])
-plt.savefig("ena_databases/apis/stats/species.png")
+plt.savefig("data/apis/overall_stats/species.png")
 
 plt.clf()
 ax = sns.countplot(data=samplesdf_mellifera, x='subspecies',order = samplesdf_mellifera['subspecies'].value_counts().index, palette='muted')
@@ -168,18 +155,51 @@ for item in ax.get_xticklabels():
     item.set_rotation(90)
 ax.set_xlabel("Apis mellifera subspecies")
 ax.bar_label(ax.containers[0])
-plt.savefig("ena_databases/apis/stats/subspecies.png")
+plt.savefig("data/apis/apis_mellifera/stats/subspecies.png")
+
+
+plt.clf()
+ax = sns.countplot(data=samplesdf_non_mellifera, x='subspecies',order = samplesdf_non_mellifera['subspecies'].value_counts().index, palette='muted')
+for item in ax.get_xticklabels():
+    item.set_rotation(90)
+ax.set_xlabel("Apis mellifera subspecies")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/apis_non_mellifera/stats/subspecies.png")
+
+
+plt.clf()
+ax = sns.countplot(data=samplesdf_non_mellifera, x='species',order = samplesdf_non_mellifera['species'].value_counts().index, palette='muted')
+for item in ax.get_xticklabels():
+    item.set_rotation(90)
+ax.set_xlabel("Apis mellifera subspecies")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/apis_non_mellifera/stats/species.png")
+
+
 
 plt.clf()
 ax = sns.countplot(data=samplesdf_mellifera, x='sex',order = samplesdf_mellifera['sex'].value_counts().index, palette='muted')
 ax.set_xlabel("Sex")
 ax.bar_label(ax.containers[0])
-plt.savefig("ena_databases/apis/stats/sex.png")
+plt.savefig("data/apis/apis_mellifera/stats/sex.png")
+
+plt.clf()
+ax = sns.countplot(data=samplesdf_non_mellifera, x='sex',order = samplesdf_non_mellifera['sex'].value_counts().index, palette='muted')
+ax.set_xlabel("Sex")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/apis_non_mellifera/stats/sex.png")
+
+plt.clf()
+ax = sns.countplot(data=samplesdf, x='sex',order = samplesdf['sex'].value_counts().index, palette='muted')
+ax.set_xlabel("Sex")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/overall_stats/sex.png")
+
 
 
 country_code = pc.country_name_to_country_alpha2("Switzerland", cn_name_format="default")
 
-countries = samplesdf_mellifera['geographic_location']
+countries = samplesdf['geographic_location']
 countries=countries.str.replace("Corsica","France")
 countries=countries.str.replace("Scotland","GBR")
 
@@ -204,6 +224,8 @@ for country in countries:
             i='Switzerland'
         elif "Spain" in a:
             i='Spain'
+        elif "Maylasia" in a:
+            i="Malaysia"
         else:
             i=a.strip().replace("?","")
         if a=='unknown' or a=='Unknown':
@@ -219,24 +241,65 @@ for i in country_codes:
     else:
         continents.append("Unknown")
 
-samplesdf_mellifera['continent']=continents
+
+samplesdf['continent']=continents
+
+
+samplesdf_mellifera=samplesdf[samplesdf['species']=='mellifera']
+samplesdf_non_mellifera=samplesdf[samplesdf['species']!='mellifera']
+
+
+
+plt.clf()
+ax = sns.countplot(data=samplesdf, x='continent',order = samplesdf['continent'].value_counts().index, palette='muted')
+ax.set_xlabel("Continent")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/overall_stats/continent.png")
+
+
 plt.clf()
 ax = sns.countplot(data=samplesdf_mellifera, x='continent',order = samplesdf_mellifera['continent'].value_counts().index, palette='muted')
 ax.set_xlabel("Continent")
 ax.bar_label(ax.containers[0])
-plt.savefig("ena_databases/apis/stats/continent.png")
+plt.savefig("data/apis/apis_mellifera/stats/continent.png")
 
+
+plt.clf()
+ax = sns.countplot(data=samplesdf_non_mellifera, x='continent',order = samplesdf_non_mellifera['continent'].value_counts().index, palette='muted')
+ax.set_xlabel("Continent")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/apis_non_mellifera/stats/continent.png")
+
+
+plt.clf()
+ax = sns.countplot(data=samplesdf, x='pooled_samples',order = samplesdf['pooled_samples'].value_counts().index, palette='muted')
+ax.set_xlabel("Pooled samples")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/overall_stats/pooled.png")
 
 plt.clf()
 ax = sns.countplot(data=samplesdf_mellifera, x='pooled_samples',order = samplesdf_mellifera['pooled_samples'].value_counts().index, palette='muted')
 ax.set_xlabel("Pooled samples")
 ax.bar_label(ax.containers[0])
-plt.savefig("ena_databases/apis/stats/pooled.png")
+plt.savefig("data/apis/apis_mellifera/stats/pooled.png")
+
+plt.clf()
+ax = sns.countplot(data=samplesdf_non_mellifera, x='pooled_samples',order = samplesdf_non_mellifera['pooled_samples'].value_counts().index, palette='muted')
+ax.set_xlabel("Pooled samples")
+ax.bar_label(ax.containers[0])
+plt.savefig("data/apis/apis_non_mellifera/stats/pooled.png")
 
 
-mellifera=mellifera.merge(samplesdf_mellifera['continent'], left_on='accession', right_index=True)
+df=df.merge(samplesdf['continent'], left_on='accession', right_index=True)
 
-move_column_inplace(mellifera, "continent", 6)
+move_column_inplace(df, "continent", 6)
 
-len(mellifera[mellifera['sample_average_depth']<5]['accession'].unique())
-mellifera.to_csv("ena_databases/apis/genomic_data/mellifera_db.csv")
+
+
+df.to_csv("data/apis/apis_db.csv")
+
+non_mellifera=df[df['apis_species']!='mellifera']
+non_mellifera=non_mellifera.reset_index(drop=True)
+non_mellifera.to_csv("data/apis/apis_non_mellifera/apis_non_mellifera_db.csv")
+
+len(non_mellifera['accession'].unique())
