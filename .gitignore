@@ -3,3 +3,8 @@ scripts/download_from_ena/
 __pycache__
 **/__pycache__
 test*
+resources/
+data/
+stats/
+logs/
+.snakemake/*
