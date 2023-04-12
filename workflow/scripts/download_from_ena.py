@@ -13,7 +13,7 @@ def main(input_df, output_dir, threads=1, dryrun=False, report_errors=None):
     """
     Read csv containing metadata, split in rows and for each row download reads
     """
-    df = pd.read_csv(input_df)
+    df = pd.read_table(input_df)
 
     rows_list = [df.loc[i] for i in df.index]
 

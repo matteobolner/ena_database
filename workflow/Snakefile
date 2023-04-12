@@ -1,22 +1,9 @@
 include: "rules/common.smk"
 include: "rules/download.smk"
 
-
-
-"""
-Downloading from single job with 4 threads is extremely faster than downloading from 4 jobs
-you could split the db in chunks of 4 and run each chunk in a job as input, but it might still be slow
-it is either because ENA FTP is slow at the moment, or because each job opens a different FTP connection which might be an issue
-"""
-
-
-#samples, runs= testdf['accession'].tolist(), testdf['run_accession'].tolist()
-
+print(units)
 rule all:
     input:
-        expand("stats/fastp/{u.sample}-{u.unit}_fastp.html",u=units.itertuples())
-        #expand("data/test_db/{run}.csv", run=testdf['run_accession'].unique())
-        #expand("{genome}.0123", genome=config['ref_genome'])
-        #expand("/lustre/home/bolner/ENA/porcula_test/{sample}_{run}.bam", zip, sample=samples, run=runs)
-        #"stats/fastp/fastp_multiqc.html"
-        #expand("stats/fastp/{sample}/{run}.html", zip, sample=samples, run=runs)
+        expand("/lustre/home/bolner/ENA/data/bam/{u.sample}/{u.unit}.bam", u=units.itertuples())
+        #"stats/multiqc/fastp.html",
+        #expand("/lustre/home/bolner/ENA/data/bam/{u.sample}/{u.unit}.bam",u=units.itertuples())

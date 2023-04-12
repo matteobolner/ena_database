@@ -1,6 +1,6 @@
 #from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
 #FTP = FTPRemoteProvider()
-
+'''
 rule download_fq_se:
     params:
         fqs=get_fastq_remote
@@ -30,98 +30,88 @@ rule download_fq_pe:
         1
     shell:
         "wget {params.fqs[r1]} -o {log.fq1} -O {output.fq1} && wget {params.fqs[r2]} -o {log.fq2} -O {output.fq2}"
-
-
-rule fastp:
-    input:
-        fq1="/lustre/home/bolner/ENA/data/fastq/raw/{sample}-{unit}.1.fastq.gz",
-        fq2="/lustre/home/bolner/ENA/data/fastq/raw/{sample}-{unit}.2.fastq.gz",
-    output:
-        html="stats/fastp/{sample}-{unit}_fastp.html",
-        json="stats/fastp/{sample}-{unit}_fastp.json",
-        fq1="/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}-{unit}.1.fastq.gz",
-        fq2="/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}-{unit}.2.fastq.gz",
-    threads:
-        4
-    benchmark:
-        "stats/benchmarks/fastp/{sample}-{unit}.txt"
-    shell:
-        "fastp -i {input.fq_1} -I {input.fq_2} -o {output.fq_1} -O {output.fq_2} -h {output.html} -j {output.json} -w {threads}"
-
-
-
-rule test_list:
-    input:
-        reads=get_raw_reads
-    output:
-        "data/test_list/{sample}-{unit}.txt"
-    shell:
-        "echo {input} > {output}"
 '''
 
-
-rule split_db_by_sample:
+rule split_db_by_unit:
     input:
-        db="data/test/test_db.csv"
+        #db="data/suina/pafr_test.csv"
+        db="data/suina/test.tsv"
     output:
-        sample_db="data/test_db/{run}.csv"
+        outfile="data/split_db/{sample}/{unit}.tsv"
+    params:
+        sample= lambda wc:wc.sample,
+        unit= lambda wc:wc.unit
     run:
-        tempdf=pd.read_csv(input.db)
-        for name,group in tempdf.groupby(by='run_accession'):
-            group.to_csv(f'{output.sample_db}', index=False)
+        tempdf=pd.read_table(input.db)
+        tempdf=tempdf[(tempdf['accession']==params.sample)&(tempdf['run_accession']==params.unit)]
+        tempdf.to_csv(output.outfile, index=False, sep='\t')
 
-
-rule test_download:
+rule download_fastq_se:
     input:
-        sample="data/test_db/{sample}.csv",
-        #sample="data/suina/porcula_wur_4.csv"
+        "data/split_db/{sample}/{unit}.tsv"
     output:
-        dir=directory("/lustre/home/bolner/FASTQ/test/{sample}"),
+        "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}.fastq.gz"
+    params:
+        outdir="/lustre/home/bolner/ENA/data/fastq/raw/"
     threads:
-        4
-    log:
-        "logs/download/{sample}.txt"
-    benchmark:
-        "stats/benchmarks/download/{sample}.txt"
+        1
     shell:
-        "python3 workflow/scripts/download_from_ena.py -i {input.sample} -o {output.dir} -n {threads} -r {log}"
+        "python3 workflow/scripts/download_from_ena.py -i {input} -o {params.outdir} -n {threads}"
 
-'''
-'''
-
-rule test_wget_speed:
+rule download_fastq_pe:
     input:
-        "data/test/{run}.csv"
+        "data/split_db/{sample}/{unit}.tsv"
     output:
-        "data/test_wget/"
+        "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}_1.fastq.gz"
+        "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}_2.fastq.gz"
+    params:
+        outdir="/lustre/home/bolner/ENA/data/fastq/raw/"
+    threads:
+        1
+    shell:
+        "python3 workflow/scripts/download_from_ena.py -i {input} -o {params.outdir} -n {threads}"
 
 
-
-rule test_fastp:
+rule fastp_pe:
     input:
-        fq_1="/lustre/home/bolner/FASTQ/porcula_test/{sample}/{run}_1.fastq.gz",
-        fq_2="/lustre/home/bolner/FASTQ/porcula_test/{sample}/{run}_2.fastq.gz"
+        get_raw_reads
     output:
-        html="stats/fastp/{sample}/{run}_fastp.html",
-        json="stats/fastp/{sample}/{run}_fastp.json",
-        fq_1="/lustre/home/bolner/FASTP/porcula_test/{sample}/{run}_1.fastq.gz",
-        fq_2="/lustre/home/bolner/FASTP/porcula_test/{sample}/{run}_2.fastq.gz",
+        html="stats/fastp/{sample}/{unit}_fastp.html",
+        json="stats/fastp/{sample}/{unit}_fastp.json",
+        fq1="/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}_1.fastq.gz",
+        fq2="/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}_2.fastq.gz",
     threads:
         4
     benchmark:
-        "stats/benchmarks/fastp/{sample}_{run}.txt"
+        "stats/benchmarks/fastp/{sample}/{unit}.txt"
     shell:
-        "fastp -i {input.fq_1} -I {input.fq_2} -o {output.fq_1} -O {output.fq_2} -h {output.html} -j {output.json} -w {threads}"
+        "fastp -i {input[0]} -I {input[1]} -o {output.fq1} -O {output.fq2} -h {output.html} -j {output.json} -w {threads}"
+
+rule fastp_se:
+    input:
+        get_raw_reads
+    output:
+        html="stats/fastp/{sample}/{unit}_se_fastp.html",
+        json="stats/fastp/{sample}/{unit}_se_fastp.json",
+        fq="/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}.fastq.gz",
+    threads:
+        4
+    benchmark:
+        "stats/benchmarks/fastp/{sample}/{unit}.txt"
+    shell:
+        "fastp -i {input} -o {output.fq} -h {output.html} -j {output.json} -w {threads}"
 
 rule multiqc_fastp:
     input:
-        expand("stats/fastp/{sample}/{run}_fastp.json", zip, sample=samples, run=runs)
+        expand("stats/fastp/{u.sample}/{u.unit}_fastp.json",u=units.itertuples())
     output:
-        "stats/fastp/fastp_multiqc.html"
+        "stats/multiqc/fastp.html"
     params:
-        dir="stats/fastp/"
-    shell:
-        "multiqc {params.dir} --filename {output}"
+        extra=""  # Optional: extra parameters for multiqc.
+    log:
+        "logs/multiqc.log"
+    wrapper:
+        "v1.25.0/bio/multiqc"
 
 rule bwa_index_ref:
     input:
@@ -139,12 +129,12 @@ rule bwa_index_ref:
 
 rule bwa_mem2_mem:
     input:
-        reads=["/lustre/home/bolner/FASTP/porcula_test/{sample}/{run}_1.fastq.gz", "/lustre/home/bolner/FASTP/porcula_test/{sample}/{run}_1.fastq.gz"],
+        reads=get_preprocessed_reads,
         idx=multiext(config['ref_genome'], ".amb", ".ann", ".bwt.2bit.64", ".pac")
     output:
-        "/lustre/home/bolner/ENA/porcula_test/{sample}_{run}.bam",
+        "/lustre/home/bolner/ENA/data/bam/{sample}/{unit}.bam",
     log:
-        "logs/bwa_mem2/{sample}_{run}.log",
+        "logs/bwa_mem2/{sample}/{unit}.log",
     params:
         extra=r"-R '@RG\tID:{sample}\tSM:{sample}\tPL:unknown\tLB:{sample}'",
         sort="samtools",  # Can be 'none', 'samtools' or 'picard'.
@@ -153,4 +143,3 @@ rule bwa_mem2_mem:
     threads: 4
     wrapper:
         "v1.25.0/bio/bwa-mem2/mem"
-'''

@@ -33,14 +33,36 @@ def get_fastq_remote(wildcards):
         return {"r1": fastqs.fq1, "r2": fastqs.fq2}
     return {"r1": fastqs.fq1}
 
+
 def get_raw_reads(wildcards):
     """Get raw reads of given sample-unit."""
     if not is_single_end(**wildcards):
         # paired-end sample
         return expand(
-            "/lustre/home/bolner/ENA/data/raw/{sample}-{unit}.{group}.fastq.gz",
+            "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}_{group}.fastq.gz",
             group=[1, 2],
             **wildcards
         )
     # single end sample
-    return "/lustre/home/bolner/ENA/data/raw/{sample}_{unit}.fastq.gz".format(**wildcards)
+    return "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}.fastq.gz".format(**wildcards)
+
+def get_preprocessed_reads(wildcards):
+    """Get preprocessed reads of given sample-unit."""
+    if not is_single_end(**wildcards):
+        # paired-end sample
+        return expand(
+            "/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}_{group}.fastq.gz",
+            group=[1, 2],
+            **wildcards
+        )
+    # single end sample
+    return "/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}.fastq.gz".format(**wildcards)
+
+#def get_raw_reads(wildcards):
+#    """Get fastq path of given sample-unit."""
+#    raw_fastq_path=f"{config['raw_fastq_dir']}/{wildcards.sample}/{wildcards.unit}"
+#    fastqs = units.loc[(wildcards.sample, wildcards.unit), ["fq1", "fq2"]].dropna()
+#    if len(fastqs) == 2:
+#        return {"r1": f'{raw_fastq_path}_1.fastq.gz', "r2": f'{raw_fastq_path}_2.fastq.gz'}
+#    return {"r1": f'{raw_fastq_path}.fastq.gz'}
+#

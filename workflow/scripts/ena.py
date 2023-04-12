@@ -40,8 +40,11 @@ class EnaFtp:
             outpath = os.path.join(output_dir, self.project, self.sample)
         else:
             outpath = os.path.join(output_dir, self.sample)
-        path = Path(outpath).mkdir(parents=True, exist_ok=True)
-        return outpath
+        try:
+            path = Path(outpath).mkdir(parents=True)
+            return outpath
+        except:
+            return outpath
 
     def files_paths(self):
         """

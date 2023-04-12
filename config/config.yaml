@@ -2,3 +2,5 @@ ref_genome: "/lustrehome/bolner/work/data/REFERENCE_GENOMES/PIG/GCF_000003025.6_
 
 samples: "config/samples.tsv"
 units: "config/units.tsv"
+
+raw_fastq_dir: "/lustre/home/bolner/ENA/data/fastq/raw/"
