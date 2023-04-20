@@ -17,8 +17,8 @@ rule fastp_se:
     input:
         get_raw_reads
     output:
-        html="stats/fastp/{sample}/{unit}_se_fastp.html",
-        json="stats/fastp/{sample}/{unit}_se_fastp.json",
+        html="stats/fastp/{sample}/{unit}_fastp.html",
+        json="stats/fastp/{sample}/{unit}_fastp.json",
         fq="/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}.fastq.gz",
     threads:
         4

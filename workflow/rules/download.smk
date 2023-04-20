@@ -1,3 +1,4 @@
+
 rule download_fastq_se:
     input:
         "data/split_db/{sample}/{unit}.tsv"
@@ -14,7 +15,7 @@ rule download_fastq_pe:
     input:
         "data/split_db/{sample}/{unit}.tsv"
     output:
-        "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}_1.fastq.gz"
+        "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}_1.fastq.gz",
         "/lustre/home/bolner/ENA/data/fastq/raw/{sample}/{unit}_2.fastq.gz"
     params:
         outdir="/lustre/home/bolner/ENA/data/fastq/raw/"

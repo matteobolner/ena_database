@@ -33,7 +33,6 @@ def get_fastq_remote(wildcards):
         return {"r1": fastqs.fq1, "r2": fastqs.fq2}
     return {"r1": fastqs.fq1}
 
-
 def get_raw_reads(wildcards):
     """Get raw reads of given sample-unit."""
     if not is_single_end(**wildcards):
@@ -57,6 +56,17 @@ def get_preprocessed_reads(wildcards):
         )
     # single end sample
     return "/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}.fastq.gz".format(**wildcards)
+
+def get_paired_fastp(wildcards):
+    if not is_single_end(**wildcards):
+        # paired-end sample
+        return expand(
+            "stats/fastp/pe/{u.sample}/{u.unit}_fastp.json",
+            **wildcards
+        )
+    # single end sample
+    return "stats/fastp/se/{u.sample}/{u.unit}_fastp.json".format(**wildcards)
+
 
 #def get_raw_reads(wildcards):
 #    """Get fastq path of given sample-unit."""
