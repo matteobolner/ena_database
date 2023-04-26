@@ -68,6 +68,22 @@ def get_paired_fastp(wildcards):
     return "stats/fastp/se/{u.sample}/{u.unit}_fastp.json".format(**wildcards)
 
 
+def get_sample_bams(wildcards):
+    """Get all aligned reads of given sample."""
+
+    return expand(
+        "/lustre/home/bolner/ENA/data/bam/{sample}-{unit}.bam",
+        sample=wildcards.sample,
+        unit=units.loc[wildcards.sample].unit,
+    )
+
+
+def get_number_of_bams_per_sample(wildcards):
+    """Get number of bams per given sample."""
+    sample=wildcards.sample
+    unit=units.loc[wildcards.sample].unit
+    return(len(unit))
+
 #def get_raw_reads(wildcards):
 #    """Get fastq path of given sample-unit."""
 #    raw_fastq_path=f"{config['raw_fastq_dir']}/{wildcards.sample}/{wildcards.unit}"

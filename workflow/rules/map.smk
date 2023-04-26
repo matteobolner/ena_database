@@ -17,7 +17,7 @@ rule bwa_mem2_mem:
         reads=get_preprocessed_reads,
         idx=multiext(config['ref_genome'], ".amb", ".ann", ".bwt.2bit.64", ".pac")
     output:
-        "/lustre/home/bolner/ENA/data/bam/{sample}/{unit}.bam",
+        temp("/lustre/home/bolner/ENA/data/bam/{sample}-{unit}.bam"),
     log:
         "logs/bwa_mem2/{sample}/{unit}.log",
     params:
@@ -31,45 +31,20 @@ rule bwa_mem2_mem:
     wrapper:
         "v1.25.0/bio/bwa-mem2/mem"
 
+rule merge_same_sample_bamfiles:
+    input:
+        get_sample_bams
+    output:
+        "/lustre/home/bolner/ENA/data/bam/{sample}.bam",
+    params:
+        bams_per_sample=get_number_of_bams_per_sample
+    shell:
+        "if [ {params.bams_per_sample} -gt 1 ] ; then samtools merge {input} -o {output}; else cp {input} {output}; fi"
+
 rule index_bam:
     input:
-        "/lustre/home/bolner/ENA/data/bam/{sample}/{unit}.bam",
+        "/lustre/home/bolner/ENA/data/bam/{sample}.bam",
     output:
-        "/lustre/home/bolner/ENA/data/bam/{sample}/{unit}.bam.bai",
+        "/lustre/home/bolner/ENA/data/bam/{sample}.bam.bai",
     shell:
         "samtools index {input}"
-
-rule mosdepth:
-    input:
-        bam="/lustre/home/bolner/ENA/data/bam/{sample}/{unit}.bam"
-    output:
-        "/lustre/home/bolner/ENA/stats/mosdepth/{sample}/{unit}.mosdepth.summary.txt"
-    threads:
-        4
-    params:
-        prefix="/lustre/home/bolner/ENA/stats/mosdepth/{sample}/{unit}"
-    shell:
-        "mosdepth --fast-mode --no-per-base --threads {threads}  {params.prefix} {input.bam}"
-
-rule samtools_flagstats:
-    input:
-        bam="/lustre/home/bolner/ENA/data/bam/{sample}/{unit}.bam"
-    output:
-        "/lustre/home/bolner/ENA/stats/samtools_flagstats/{sample}.tsv"
-    threads:
-        4
-    shell:
-        "samtools flagstats -@ {threads} -O tsv {input} > {output}"
-
-
-rule multiqc_mosdepth:
-    input:
-        expand("stats/fastp/{u.sample}/{u.unit}_fastp.json",u=units.itertuples())
-    output:
-        "stats/multiqc/fastp.html"
-    params:
-        extra=""  # Optional: extra parameters for multiqc.
-    log:
-        "logs/multiqc/fastp.log"
-    wrapper:
-        "v1.25.0/bio/multiqc"
