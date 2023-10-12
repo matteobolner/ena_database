@@ -5,10 +5,16 @@ include: "rules/preprocess.smk"
 include: "rules/map.smk"
 include: "rules/stats.smk"
 
+
 rule all:
     input:
-        "stats/sample_depths.tsv"
-        #expand("/lustre/home/bolner/ENA/data/bam/{sample}.bam", sample=samples.index) ,
+        expand("/lustrehome/bolner/work/data/BAMFILES/PIG/{sample}.rmdup.bam", sample=samples.index),
+        #expand("/lustrehome/bolner/work/workspace/ABO_pipeline/resources/samples/{sample}.rmdup.bam", sample=samples.index)
+        #"stats/sample_depths.tsv"
+        #expand("/lustre/home/bolner/ENA/data/bam/{sample}.bam.bai", sample=samples.index)
+        #"stats/multiqc/mosdepth.html"
+        #"stats/sample_depths.tsv"
+        #expand("/lustre/home/bolner/ENA/data/bam/{sample}.bam.bai", sample='SAMEA5151076') ,
         #"stats/multiqc/samtools_flagstats.html"
         #expand("stats/samtools_flagstats/{sample}.tsv", sample=samples.index)
         #"stats/multiqc/fastp.html"
@@ -16,3 +22,9 @@ rule all:
         #expand("/lustre/home/bolner/ENA/stats/mosdepth/{u.sample}/{u.unit}.mosdepth.summary.txt", u=units.itertuples())
         #"stats/multiqc/fastp.html",
         #expand("/lustre/home/bolner/ENA/data/bam/{u.sample}/{u.unit}.bam",u=units.itertuples())
+
+
+"""
+PROJECT SPECIFIC RULES
+"""
+include: "rules/project_specific_rules/abo.smk"

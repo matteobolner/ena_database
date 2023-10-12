@@ -1,3 +1,4 @@
+benchmarks/
 scripts/download_from_ena.tar.gz
 scripts/download_from_ena/
 __pycache__

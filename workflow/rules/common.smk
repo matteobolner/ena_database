@@ -57,6 +57,16 @@ def get_preprocessed_reads(wildcards):
     # single end sample
     return "/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}.fastq.gz".format(**wildcards)
 
+
+def get_sample_preprocessed_reads(wildcards):
+    """Get all preprocessed reads of given sample."""
+    return expand(
+        "/lustre/home/bolner/ENA/data/fastq/preprocessed/{sample}/{unit}_{group}.fastq.gz",
+        sample=wildcards.sample,
+        unit=units.loc[wildcards.sample].unit,
+        group=[1,2]
+    )
+
 def get_paired_fastp(wildcards):
     if not is_single_end(**wildcards):
         # paired-end sample
@@ -70,7 +80,6 @@ def get_paired_fastp(wildcards):
 
 def get_sample_bams(wildcards):
     """Get all aligned reads of given sample."""
-
     return expand(
         "/lustre/home/bolner/ENA/data/bam/{sample}-{unit}.bam",
         sample=wildcards.sample,

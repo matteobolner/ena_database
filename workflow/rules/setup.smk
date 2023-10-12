@@ -1,7 +1,6 @@
 rule split_db_by_unit:
     input:
-        #db="data/suina/pafr_test.csv"
-        db="data/suina/pafr_and_porcula.csv"
+        db="data/suina/choerus.csv"
     output:
         outfile="data/split_db/{sample}/{unit}.tsv"
     params:

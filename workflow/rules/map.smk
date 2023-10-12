@@ -48,3 +48,13 @@ rule index_bam:
         "/lustre/home/bolner/ENA/data/bam/{sample}.bam.bai",
     shell:
         "samtools index {input}"
+
+rule link_bam_to_bam_folder:
+    input:
+        bam="/lustre/home/bolner/ENA/data/bam/{sample}.bam",
+        idx="/lustre/home/bolner/ENA/data/bam/{sample}.bam.bai"
+    output:
+        bam="/lustrehome/bolner/work/data/BAMFILES/PIG/{sample}.rmdup.bam",
+        idx="/lustrehome/bolner/work/data/BAMFILES/PIG/{sample}.rmdup.bam.bai"
+    shell:
+        "ln -s {input.bam} {output.bam} && ln -s {input.idx} {output.idx}"

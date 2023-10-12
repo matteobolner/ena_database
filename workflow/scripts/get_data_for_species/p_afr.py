@@ -1,16 +1,19 @@
 import pandas as pd
-#cd ../
-#cd ena_database/
-
 import numpy as np
 
 
 bs=pd.read_table("data/suina/clean_bs_db.tsv")
 df=pd.read_table("data/suina/ena_db.tsv")
+df['depth']=df['base_count']/2425573090
 
 df['scientific_name'].value_counts()
 
-df['depth']=df['base_count']/2425573090
+df=df[~df['scientific_name'].str.contains("Sus scrofa")]
+
+df=df[df['depth']>5]
+
+df['scientific_name'].value_counts()
+
 
 porcula=df[df['scientific_name']=='Porcula salvania']
 

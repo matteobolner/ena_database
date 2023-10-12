@@ -52,11 +52,11 @@ rule get_overall_sample_depth:
         samples=samples.index
     run:
         outdf=pd.DataFrame(columns=['sample','depth'])
-        for i,j in zip({input.depths}, {params.samples}):
+        for i,j in zip(input.depths, params.samples):
             tempdf=pd.read_table(i).set_index('chrom')
             sample_depth=tempdf.loc['total']['mean']
-            outdf.loc[len(outdf)]=[sample_depth, j]
-        outdf.to_csv({output.depths}, sep='\t')
+            outdf.loc[len(outdf)]=[j, sample_depth]
+        outdf.to_csv(output.depths, sep='\t', index=False)
 
 rule samtools_flagstats:
     input:

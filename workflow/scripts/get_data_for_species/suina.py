@@ -1,11 +1,11 @@
 import pandas as pd
 import sys
 sys.path.append("/lustrehome/bolner/work/workspace/ena_database/scripts/")
-from build_db_class import ena_db
+from workflow.scripts.build_db_class import ena_db
 
 #db=ena_db(taxon=35497, breeds='resources/breed_names/pig.txt', sexes=['male','female','gilt','sow','gilts','sows','barrow','queen'])
 
-db=ena_db(taxon=35497, db_path='data/suina/ena_db.tsv', breeds='resources/breed_names/pig.txt', sexes=['male','female','gilt','sow','gilts','sows','barrow','queen'])
+db=ena_db(taxon=35497, breeds='resources/breed_names/pig.txt', sexes=['male','female','gilt','sow','gilts','sows','barrow','queen'])
 
 #db.ena_df.to_csv("data/suina/ena_db.tsv", sep='\t', index=False)
 bs_df=db.build_biosamples_df(db.ena_df, thread_number=4)
